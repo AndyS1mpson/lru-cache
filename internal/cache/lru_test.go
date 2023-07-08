@@ -1,7 +1,6 @@
 package cache
 
 import (
-	"container/list"
 	"fmt"
 	"sync"
 	"testing"
@@ -21,7 +20,7 @@ func TestLRUCache_Get_Item_OK(t *testing.T) {
 	// Arrange
 	cache := NewLRUCache(5)
 	key := "test_key"
-	value := "test_value"
+	value := &Item{key: key, value: "test_value"}
 	elem := cache.queue.PushFront(value)
 	cache.items[key] = elem
 
@@ -30,7 +29,7 @@ func TestLRUCache_Get_Item_OK(t *testing.T) {
 
 	// Assert
 	require.True(t, ok)
-	require.Equal(t, value, el)
+	require.Equal(t, value.value, el)
 }
 
 func TestLRUCache_Set_Item_OK(t *testing.T) {
@@ -45,7 +44,7 @@ func TestLRUCache_Set_Item_OK(t *testing.T) {
 	err := cache.Set(key, value)
 
 	// Assert
-	el := cache.items[key]
+	el := cache.items[key].Value.(*Item).value
 
 	require.NoError(t, err)
 	require.Equal(t, value, el)
@@ -63,11 +62,11 @@ func TestLRU_Set_ExistElementWithFULlQueueSync_MoveToFront(t *testing.T) {
 	// Act
 	cache.Set("Vasva", 15)
 
-	resultFront, _ := cache.queue.Front().Value.(*list.Element)
-	resultBack, _ := cache.queue.Back().Value.(*list.Element)
+	resultFront, _ := cache.queue.Front().Value.(*Item)
+	resultBack, _ := cache.queue.Back().Value.(*Item)
 
-	require.Equal(t, resultFront, 15)
-	require.Equal(t, resultBack, "opa")
+	require.Equal(t, resultFront.value, 15)
+	require.Equal(t, resultBack.value, "opa")
 	require.Equal(t, cache.queue.Len(), 3)
 
 }
@@ -149,10 +148,10 @@ func TestLRUCache_ConcurrentSafety_GetSetItems_OK(t *testing.T) {
 	capacity := 3
 	cache := NewLRUCache(capacity)
 	var wg sync.WaitGroup
-	wg.Add(capacity + capacity + 2)
+	wg.Add(capacity + capacity)
 	// Act
 	for i := 1; i < cache.capacity+1; i++ {
-		li := 1
+		li := i
 		go func() {
 			defer wg.Done()
 			err := cache.Set(fmt.Sprintf("key%d", li), fmt.Sprintf("value%d", li))
@@ -161,8 +160,7 @@ func TestLRUCache_ConcurrentSafety_GetSetItems_OK(t *testing.T) {
 
 		go func() {
 			defer wg.Done()
-			_, ok := cache.Get(fmt.Sprintf("key%d", li))
-			require.True(t, ok)
+			cache.Get(fmt.Sprintf("key%d", li))
 		}()
 	}
 
@@ -172,7 +170,7 @@ func TestLRUCache_ConcurrentSafety_GetSetItems_OK(t *testing.T) {
 	require.Equal(t, 3, size)
 	for i := 1; i < cache.capacity+1; i++ {
 		value, ok := cache.Get(fmt.Sprintf("key%d", i))
-		require.False(t, ok)
+		require.True(t, ok)
 		require.Equal(t, fmt.Sprintf("value%d", i), value)
 	}
 

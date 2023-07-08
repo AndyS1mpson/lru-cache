@@ -1,6 +1,6 @@
 package cache
 
-// Interface for caches
+// Define interface for caches
 type Cacher interface {
 	Get(key string) (any, bool)
 	Set(key string, value any) error
