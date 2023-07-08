@@ -11,7 +11,7 @@ type Item struct {
 }
 
 type LRUCache struct {
-	items map[string]*list.Element
+	items    map[string]*list.Element
 	queue    *list.List
 	capacity int
 	dataMu   sync.RWMutex
@@ -19,8 +19,8 @@ type LRUCache struct {
 
 func NewLRUCache(capacity int) *LRUCache {
 	return &LRUCache{
-		items: make(map[string]*list.Element),
-		queue: list.New(),
+		items:    make(map[string]*list.Element),
+		queue:    list.New(),
 		capacity: capacity,
 	}
 }
