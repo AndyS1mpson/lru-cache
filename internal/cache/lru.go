@@ -52,7 +52,7 @@ func (c *LRUCache) Set(key string, val any) error {
 		c.queue.MoveToFront(elem)
 		return nil
 	}
-	
+
 	// Если элемента нет, создаем новый и добавляем в кэш
 	newItem := &Item{key: key, value: val}
 	elem := c.queue.PushFront(newItem)
