@@ -2,6 +2,8 @@ package cache
 
 import (
 	"container/list"
+	"fmt"
+	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -139,4 +141,39 @@ func TestLRUCache_Count_Items_OK(t *testing.T) {
 
 	// Assert
 	require.Equal(t, el, 1)
+}
+
+func TestLRUCache_ConcurrentSafety_GetSetItems_OK(t *testing.T) {
+	t.Parallel()
+	// Arrange
+	capacity := 3
+	cache := NewLRUCache(capacity)
+	var wg sync.WaitGroup
+	wg.Add(capacity + capacity + 2)
+	// Act
+	for i := 1; i < cache.capacity+1; i++ {
+		li := 1
+		go func() {
+			defer wg.Done()
+			err := cache.Set(fmt.Sprintf("key%d", li), fmt.Sprintf("value%d", li))
+			require.NoError(t, err)
+		}()
+
+		go func() {
+			defer wg.Done()
+			_, ok := cache.Get(fmt.Sprintf("key%d", li))
+			require.True(t, ok)
+		}()
+	}
+
+	wg.Wait()
+
+	size := cache.Count()
+	require.Equal(t, 3, size)
+	for i := 1; i < cache.capacity+1; i++ {
+		value, ok := cache.Get(fmt.Sprintf("key%d", i))
+		require.False(t, ok)
+		require.Equal(t, fmt.Sprintf("value%d", i), value)
+	}
+
 }
