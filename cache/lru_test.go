@@ -18,9 +18,9 @@ import (
 func TestLRUCache_Get_Item_OK(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	cache := NewLRUCache(5)
+	cache := NewLRUCache[string, string](5)
 	key := "test_key"
-	value := &Item{key: key, value: "test_value"}
+	value := &Item[string, string]{key: key, value: "test_value"}
 	elem := cache.queue.PushFront(value)
 	cache.items[key] = elem
 
@@ -36,7 +36,7 @@ func TestLRUCache_Set_Item_OK(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	cache := NewLRUCache(5)
+	cache := NewLRUCache[string, string](5)
 	key := "test_key"
 	value := "test_value"
 
@@ -44,7 +44,7 @@ func TestLRUCache_Set_Item_OK(t *testing.T) {
 	err := cache.Set(key, value)
 
 	// Assert
-	el := cache.items[key].Value.(*Item).value
+	el := cache.items[key].Value.(*Item[string, string]).value
 
 	require.NoError(t, err)
 	require.Equal(t, value, el)
@@ -54,19 +54,19 @@ func TestLRUCache_Set_Item_OK(t *testing.T) {
 func TestLRU_Set_ExistElementWithFULlQueueSync_MoveToFront(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	cache := NewLRUCache(3)
+	cache := NewLRUCache[string, int](3)
 	cache.Set("Vasya", 10)
-	cache.Set("Petya", "opa")
-	cache.Set("Kolya", []int{1, 2})
+	cache.Set("Petya", 11)
+	cache.Set("Kolya", 15)
 
 	// Act
 	cache.Set("Vasva", 15)
 
-	resultFront, _ := cache.queue.Front().Value.(*Item)
-	resultBack, _ := cache.queue.Back().Value.(*Item)
+	resultFront, _ := cache.queue.Front().Value.(*Item[string, int])
+	resultBack, _ := cache.queue.Back().Value.(*Item[string, int])
 
 	require.Equal(t, resultFront.value, 15)
-	require.Equal(t, resultBack.value, "opa")
+	require.Equal(t, resultBack.value, 11)
 	require.Equal(t, cache.queue.Len(), 3)
 
 }
@@ -75,7 +75,7 @@ func TestLRUCache_Set_MoreThanCap_MaxCap(t *testing.T) {
 	t.Parallel()
 
 	// Arrange
-	cache := NewLRUCache(5)
+	cache := NewLRUCache[string, string](5)
 
 	cache.Set("test_1", "value_1")
 	cache.Set("test_2", "value_2")
@@ -93,7 +93,7 @@ func TestLRUCache_Set_MoreThanCap_MaxCap(t *testing.T) {
 func TestLRUCache_Delete_Item_OK(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	cache := NewLRUCache(5)
+	cache := NewLRUCache[string, string](5)
 	key := "test_key"
 	value := "test_value"
 	elem := cache.queue.PushFront(value)
@@ -111,7 +111,7 @@ func TestLRUCache_Delete_Item_OK(t *testing.T) {
 func TestLRUCache_Clear_Cache_OK(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	cache := NewLRUCache(5)
+	cache := NewLRUCache[string, string](5)
 	key := "test_key"
 	value := "test_value"
 	elem := cache.queue.PushFront(value)
@@ -129,7 +129,7 @@ func TestLRUCache_Clear_Cache_OK(t *testing.T) {
 func TestLRUCache_Count_Items_OK(t *testing.T) {
 	t.Parallel()
 	// Arrange
-	cache := NewLRUCache(5)
+	cache := NewLRUCache[string, string](5)
 	key := "test_key"
 	value := "test_value"
 	elem := cache.queue.PushFront(value)
@@ -146,7 +146,7 @@ func TestLRUCache_ConcurrentSafety_GetSetItems_OK(t *testing.T) {
 	t.Parallel()
 	// Arrange
 	capacity := 3
-	cache := NewLRUCache(capacity)
+	cache := NewLRUCache[string, string](capacity)
 	var wg sync.WaitGroup
 	wg.Add(capacity + capacity)
 	// Act

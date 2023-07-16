@@ -6,55 +6,55 @@ import (
 )
 
 // Cache item
-type Item struct {
-	key   string
-	value any
+type Item[Key comparable, Val any] struct {
+	key   Key
+	value Val
 }
 
 // Custom LRU Cacche implementation
-type LRUCache struct {
-	items    map[string]*list.Element
+type LRUCache[Key comparable, Val any] struct {
+	items    map[Key]*list.Element
 	queue    *list.List
 	capacity int
 	dataMu   sync.RWMutex
 }
 
 // Initialize new lru cache
-func NewLRUCache(capacity int) *LRUCache {
-	return &LRUCache{
-		items:    make(map[string]*list.Element),
+func NewLRUCache[Key comparable, Val any](capacity int) *LRUCache[Key, Val] {
+	return &LRUCache[Key, Val]{
+		items:    make(map[Key]*list.Element),
 		queue:    list.New(),
 		capacity: capacity,
 	}
 }
 
 // Get element from cache by key
-func (c *LRUCache) Get(key string) (any, bool) {
+func (c *LRUCache[Key, Val]) Get(key Key) (Val, bool) {
 	c.dataMu.RLock()
 	defer c.dataMu.RUnlock()
 
 	if elem, exists := c.items[key]; exists {
 		c.queue.MoveToFront(elem)
-		return elem.Value.(*Item).value, true
+		return elem.Value.(*Item[Key, Val]).value, true
 	}
 
-	return nil, false
+	return Item[Key, Val]{}.value, false
 }
 
 // Save elemnt in cache
-func (c *LRUCache) Set(key string, val any) error {
+func (c *LRUCache[Key, Val]) Set(key Key, val Val) error {
 	c.dataMu.Lock()
 	defer c.dataMu.Unlock()
 
 	// Проверяем, существует ли элемент с заданным ключем
 	if elem, exists := c.items[key]; exists {
-		elem.Value.(*Item).value = val
+		elem.Value.(*Item[Key, Val]).value = val
 		c.queue.MoveToFront(elem)
 		return nil
 	}
 
 	// Если элемента нет, создаем новый и добавляем в кэш
-	newItem := &Item{key: key, value: val}
+	newItem := &Item[Key, Val]{key: key, value: val}
 	elem := c.queue.PushFront(newItem)
 	c.items[key] = elem
 
@@ -62,7 +62,7 @@ func (c *LRUCache) Set(key string, val any) error {
 	if c.queue.Len() > c.capacity {
 		oldestElem := c.queue.Back()
 		if oldestElem != nil {
-			oldestElem := c.queue.Remove(oldestElem).(*Item)
+			oldestElem := c.queue.Remove(oldestElem).(*Item[Key, Val])
 			delete(c.items, oldestElem.key)
 		}
 	}
@@ -71,7 +71,7 @@ func (c *LRUCache) Set(key string, val any) error {
 }
 
 // Delete element from cache by key
-func (c *LRUCache) Delete(key string) {
+func (c *LRUCache[Key, Val]) Delete(key Key) {
 	c.dataMu.Lock()
 	defer c.dataMu.Unlock()
 
@@ -82,7 +82,7 @@ func (c *LRUCache) Delete(key string) {
 }
 
 // Return count of elements in cache
-func (c *LRUCache) Count() int {
+func (c *LRUCache[Key, Val]) Count() int {
 	c.dataMu.Lock()
 	defer c.dataMu.Unlock()
 
@@ -90,10 +90,10 @@ func (c *LRUCache) Count() int {
 }
 
 // Clear cache
-func (c *LRUCache) Clear() {
+func (c *LRUCache[Key, Val]) Clear() {
 	c.dataMu.Lock()
 	defer c.dataMu.Unlock()
 
-	c.items = make(map[string]*list.Element)
+	c.items = make(map[Key]*list.Element)
 	c.queue.Init()
 }
